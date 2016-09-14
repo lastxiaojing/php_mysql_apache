@@ -1,0 +1,11 @@
+# 遇到的错误
+
+1,在连接数据库时,调用mysql_connect()函数,出现错误:
+PHP Warning:  mysql_connect(): No such file or directory in /Users/zjz/Documents/folder_php/connect_mysql.php on line 3
+
+解决办法:
+写个脚本输出phpinfo页面,找到mysql.default_socket, mysqli.default_socket, pdo_mysql.default_socket记下对应的值
+启动mysql,在mysql下执行status
+>status
+记下UNIX socket的值
+将结果进行比较,如果结果不同就在php.ini里边将前边对应的值改成status中UNIX socket的值,或者建立软链解决
