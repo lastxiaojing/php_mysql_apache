@@ -1,0 +1,21 @@
+# mac下配置apache
+其实在mac下是不用配置apache的,mac自己就自带了apache,而且性能还不错
+但是还是有些需要纪录的地方
+
+
+# httpd.conf
+	1,路径:
+	/etc/apache2/
+	2,开启php
+	找到如下的一行,并且取消前边的注释即可
+	LoadModule php5_module libexec/apache2/libphp5.so
+	3,默认目录
+	在httpd.conf里边找到DocumentRoot,这里的路径是默认的根目录,在外部访问的目录就是这个
+	有时候我们需要配置自己的路径,每次使用这个毕竟不太好
+	修改:
+	--> Document "/Users/zjz/Sites/"
+	下边对应的修改为:
+	--> <Directory "/users/zjz/Sites/">
+	
+	在使用apache时候,需要在"偏好设置" -> "共享" -> "互联网共享" 打开(英文版系统找对应的即可)
+	还有就是防火墙需要根据需要设置一下

@@ -1,0 +1,71 @@
+# 背景
+	在mac上安装mysql时候出现很多问题,很多坑.和linux有很多区别,所以做个纪录,以后有问题可以去查.
+	参考了网上的几篇博客.
+	如有侵权,还请见谅.
+	在使用过程中,遇到问题会持续更新.
+
+# 安装
+	开始按照网上的教程,看起来很正规的一个教程,但是在操作过程中出现各种问题.
+	开始一直使用的是.dmg格式的安装文件(官网下载的),不知道怎么回事,在很多教程中下载完成之后都是3-4个文件,我的只有一个,
+	可能版本的问题吧,下载完成之后安装.众所周知,在Mac下,dmg格式的就好比win下的的setup.exe一样,点击就可以安装.
+	但是,安装完成之后缺少各种文件,一步一个坑.于是采用了编译好的免安装的.tar.gz格式的(官网有).
+
+	在下载目录找到下载的文件,执行命令:
+	tar zxvf [+your mysql file]
+	解压完成之后会得到一个目录文件,将这个目录下的文件移动到mysql默认安装路径 /usr/local/mysql/下,如果路径不存在,自己创建一个.
+	
+	# 更改mysql安装目录所属用户与用户组,执行命令:
+	cd /usr/local
+	sudo chown -R root:wheel mysql
+
+	# 执行scripts目录下mysql_install_db脚本完成一些默认的初始化(创建默认配置文件、授权表等)
+	cd /usr/local/mysql
+	sudo scripts/mysql_install_db --user=mysql
+	# 注意: mysql 5.7.6以上版本没有scripts目录,改成了
+	sudo bin/mysqld --initialize --user=mysql
+	
+# 安装完成 一些初始化问题
+	cd /usr/local/mysql
+	# 启动
+	sudo support-files/mysql.server start
+	# 重启
+	sudo support-files/mysql.server restart
+	# 停止
+	sudo support-files/mysql.server stop
+
+	# 初始化密码
+	cd /usr/local/mysql/bin
+	./mysqladmin -u root password <your-password>
+	
+	# 通过自带的mysql client连接数据库
+	cd /usr/local/mysql/bin
+	./mysql -u root -p
+	<your-password>
+
+# 在这些过程中可能会出现一些问题,我用的系统是mac OS X Yosemite 10.10.2
+	1.如果启动时候出现问题
+	首先执行:
+	ps -ef | grep mysql
+	看看是不是有个mysqld的进程正在执行,可以kill掉,在进行一次尝试.
+	2.如果修改密码出现问题,可能的原因有可能是
+	mysql版本问题,导致没有mysql.user表中没有password字段,字段改成了authentication_string字段.
+	可以先通过安全模式进去修改密码,然后修改权限.执行:
+	sudo /usr/local/mysql/support-files/mysql.server stop
+	mysql_safe --skip-grant-tables &
+	输入:
+	mysql -uroot -p
+	回车进入
+	>use mysql;
+	在这里先通过
+	>select * from user;
+	查看一下字段是password还是authentication_string,然后在执行下边的命令
+	>update user set password=PASSWORD("newpass") where user="root";
+	# 更新权限
+	>flush privileges;
+	>quit;
+	3.如果没有mysql.sock文件.
+	判断你的mysql是不是执行状态,通过ps -ef | grep mysql可以知道,如果是执行状态可以在整个文件系统里边进行查找: 
+	find / | grep mysql.sock
+	如果没有在指定的位置,建立一个软链就好了
+	判断一下mysql/bin目录下有没有一个mysql-bin的文件,如果有可以先屏蔽此文件
+	判断一下是不是权限问题
