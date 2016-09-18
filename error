@@ -9,3 +9,4 @@ PHP Warning:  mysql_connect(): No such file or directory in /Users/zjz/Documents
 >status
 记下UNIX socket的值
 将结果进行比较,如果结果不同就在php.ini里边将前边对应的值改成status中UNIX socket的值,或者建立软链解决
+
