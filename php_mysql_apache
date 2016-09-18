@@ -1,0 +1,152 @@
+# 简单叙述一下怎么使用php-apache-mysql来进行工作
+# 叙述的比较简陋,并不是真正工作项目中用到的,可以用来做个小练习,写一些小的接口
+
+# 先说一下各自的作用
+
+1.apache
+	在php-apache-mysql这个架构里边,apache主要是网络服务器,负责网络端的任务,在web端的展示.
+2.mysql
+	mysql很容易理解,就是数据的存储.
+3.php
+	php在php-apache-mysql这个架构里边,主要是负责逻辑.负责连接mysql和apache.当然可以通过php来访问和操作mysql,对数据进行增删改查.
+	也可以通过php对apache进行一些调整,比如对数据的展示方式等等.在项目中,php更多是逻辑的控制.一些配置文件,逻辑代码都可以用php来
+	做.
+	+-------------------------+------------------------+-----------------------+
+	|	数据存储          | 	逻辑控制,连接两者  | Web端展示,网络服务器  |
+	|       mysql             |         php            |       apache          |
+	+-------------------------+------------------------+-----------------------+
+	php从mysql取出数据,用来处理逻辑,或者在前端通过apache来进行展示.
+	用户在Web端输入信息,apache会通过_GET, _POST, _REQUEST等方式传递给php,php获取数据
+	之后可以进行逻辑处理,也可以传递给mysql进行存储.	
+
+# 简单的使用
+	其实很容易,按照本文件夹下的apache_tips 和 mysql_tips安装完成之后,基本可以说已经弄好了.
+	在apache的设置的目录下,建立自己的文件,比如conf/ bin/ log/......等等,来给自己的项目
+	设置不同的层次.
+	通过写php配置文件来连接数据库,根据逻辑来完成不同功能的跳转.
+	下边会给出一个通过php来连接mysql和apache的例子.
+	其实就是很简单的一个提供测试的小程序.
+#######################################################################################
+# 这是一些数据库的操作指令
+# 通过mysql_query()函数,可以实现其他的指令,格式相同
+<?php
+
+	// servername or ip [+port]  默认port:3306 在my.cnf中设置
+	$servername = "localhost";
+	// username
+	$username = "root";
+	// password
+	$password = "12345";
+	// connect mysql
+	$con = mysql_connect($servername, $username, $password);
+	if (!$con) {
+		die('Could not connect: ' . mysql_error());
+	} else {
+		print("Connect MYSQL Success!\n");		
+	}
+
+	// create database
+	if (mysql_query("CREATE DATABASE IF NOT EXISTS my_db", $con)) {
+		print("CREATE DATABASE SUCCESS!\n");
+	} else {
+		print("Error creating database: ". mysql_error());
+	}
+	// select db
+	mysql_select_db("my_db", $con);	
+	// create table
+	$sql = "CREATE TABLE IF NOT EXISTS Persons
+		(
+			personID int NOT NULL AUTO_INCREMENT,
+			PRIMARY KEY(personID),
+			FirstName varchar(15),
+			LastName varchar(15),
+			Age int
+		)";
+	if (mysql_query($sql, $con)) {
+		print("CREATE TABLE SUCCESS!\n");
+	} else {
+		print("Error creating database: Persons. ". mysql_error() . "\n");
+	}
+	// insert data
+//	if (mysql_query("INSERT INTO Persons (FirstName, LastName, Age)
+//		VALUES ('Peter', 'Griffin', '35')")) {
+//		print("INSERT DATA SUCCESS!\n");
+//	} else {
+//		print("INSERT DATA INTO table: Psersons ERROR!\n");
+//		die("ERROR: " . mysql_error());
+//	}
+//	if (mysql_query("INSERT INTO Persons (FirstName, LastName, Age)
+//		VALUES('Glenn', 'Quagmire', '33')")) {
+//		print("INSERT DATA SUCCESS!\n");
+//	} else {
+//		print("INSERT DATA INTO table: Persons ERROR!\n");
+//		die("ERROR: " . mysql_error());
+//	}
+
+	// select
+	$result = mysql_query("SELECT * FROM Persons");
+	while($row = mysql_fetch_array($result)) {
+		echo $row['FirstName'] . " " . $row['LastName'];
+		// echo '<br />';
+		echo "\n";
+	}
+
+	// drop database
+	// if (mysql_query("DROP DATABASE IF EXISTS my_db", $con)) {
+	// 	print("DROP DATABASE SUCCESS!\n");
+	// } else {
+	// 	print("Error droping database: ". mysql_error());
+	// }
+	// close connect
+	mysql_close($con);
+?>
+
+#######################################################################################
+# 这是一个通过php访问数据库,然后在web展示的小程序
+<html>
+	<body>
+		<form action="addpeople.php" method="post">
+			FirstName: <input type="text" name="firstname" />
+			Lastname: <input type="text" name="lastname" />
+			Age: <input type="number" name="age" />
+			<input type="submit" />
+		</form>
+	</body>
+</html>
+
+
+<?php
+
+	echo "FileName: addpeople.php";
+	echo "<br>";
+	echo "Data    : 2016-09-18";
+	echo "<br>";
+
+	$servername = "localhost";
+	$username = "root";
+	$password = "12345";
+	// connect to mysqlserver
+	$conn = mysql_connect($servername, $username, $password);
+	if (!$conn) {
+		die("Couldn't connect: " . mysql_error());
+	} else {
+		echo "Connect Success!";
+		echo "<br>";
+	}
+	// select db
+	mysql_select_db("my_db", $conn);
+	// insert data into table: Persons
+	$sql = "INSERT INTO Persons(FirstName, LastName, Age)
+		VALUES
+		('$_POST[firstname]', '$_POST[lastname]', '$_POST[age]')";
+	if(!mysql_query($sql, $conn)) {
+		die("Error: " . mysql_error());
+	} else {
+		echo "Insert Data Success!  ";
+	}
+	echo "1 record added";
+
+	mysql_close($conn);
+
+?>
+#######################################################################################
