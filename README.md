@@ -1,0 +1,4 @@
+# php_mysql_apache
+
+主要是记录自己学习php_mysql_apache框架的一个过程
+比较简单,目的是自己查看和分享
