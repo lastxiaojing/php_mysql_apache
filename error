@@ -1,6 +1,6 @@
-# 遇到的错误
+###[1-1] 是在mac os上安装和使用mysql时遇到的错误
 
-1,在连接数据库时,调用mysql_connect()函数,出现错误:
+1.在连接数据库时,调用mysql_connect()函数,出现错误:
 PHP Warning:  mysql_connect(): No such file or directory in /Users/zjz/Documents/folder_php/connect_mysql.php on line 3
 
 解决办法:
@@ -10,3 +10,22 @@ PHP Warning:  mysql_connect(): No such file or directory in /Users/zjz/Documents
 记下UNIX socket的值
 将结果进行比较,如果结果不同就在php.ini里边将前边对应的值改成status中UNIX socket的值,或者建立软链解决
 
+
+###[2-3] 是在linux 2.632-279 x86_64上安装和使用mysql时出现的问题
+2.安装过程中执行
+$ ./mysqld --initialize --user=mysql,出现如下错误
+[Warning] TIMESTAMP with implicit DEFAULT value is deprecated. Please use --explicit_defaults_for_timestamp server option (see documentation for more details).
+[ERROR] Aborting
+
+然后根据提示执行如下命令:
+$ ./mysqld --initialize --user=mysql  --explicit_defaults_for_timestamp
+出现如下错误
+mysqld: Can't create directory '/var/lib/mysql/' (Errcode: 13 - Permission denied)
+2016-09-18T11:20:29.540393Z 0 [ERROR] Aborting
+
+然后执行如下命令:[自己指明 --basedir= 和 --datadir= 参数]
+$ ./mysqld --initialize --user=mysql  --explicit_defaults_for_timestamp --basedir=/data/zhaojingzhen/usr/local/mysql --datadir=/data/zhaojingzhen/usr/local/mysql/data
+
+3.ERROR 1820 (HY000): You must reset your password using ALTER USER statement before executing this statement. 
+mysql> SET PASSWORD = PASSWORD('123456');
+mysql> flush privileges;
