@@ -177,3 +177,14 @@ vi /usr/local/php/etc/php.ini  #编辑配置文件，在最后一行添加以下
 extension="redis.so"
 :wq!
 ===================================================================
+安装mysql,mysqli扩展
+===================================================================
+进入php源码目录下的ext目录[该目录就是源码解压包的扩展目录]
+在该目录下phpize
+./configure --with-php-config=/data/zhaojingzhen/usr/local/php/bin/php-config --with-mysql=/data/zhaojingzhen/usr/local/mysql/
+make && make install
+
+./configure --with-php-config=/data/zhaojingzhen/usr/local/php/bin/php-config --with-mysqli=/data/zhaojingzhen/usr/local/mysql/bin/mysql_config
+make && make install
+
+可能会出现缺少文件的现象,首先在源码的ext/mysqlnd下看看有没有对应的文件,如果有就直接在待安装的文件下建立ext/mysqlnd/  把文件拷贝过来即可
