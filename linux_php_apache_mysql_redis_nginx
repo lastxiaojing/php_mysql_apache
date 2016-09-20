@@ -1,0 +1,213 @@
+# 整理在linux下没有sudo和su权限安装mysql,redis,apache,php,nginx以及php对于mysql,apache扩展
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;  linux下安装apache ;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+1.从官网下载apache的源码 httpd-2.4.23.tar.gz
+2.解压
+	tar -zxvf httpd-2.4.23.tar.gz
+3.安装
+	./configure --prefix=/usr/local/apache2 --enable-so --enable-rewrite
+	这一步我出现了错误,没有apr,apr-util,pcre这些安装需要的东西
+	解决办法:
+	下载需要的文件
+	wget http://archive.apache.org/dist/apr/apr-1.4.5.tar.gz  
+	wget http://archive.apache.org/dist/apr/apr-util-1.3.12.tar.gz  
+	wget http://jaist.dl.sourceforge.net/project/pcre/pcre/8.10/pcre-8.10.zip
+
+	解决apr not found 问题
+	tar -zxvf apr-1.4.5.tar.gz
+	cd apr-1.4.5
+	./configure --prefix=/your_install_path/apr
+	make && make install
+
+	解决APR-util not found问题
+	tar -zxvf apr-util-1.3.12.tar.gz
+	cd apr-util-1.3.12
+	./configure --prefix=/your_install_path/apr-util -with-par=/your_apr_path/apr
+	make && make install
+
+	解决pcre问题
+	unzip -o pcre-8.10.zip
+	cd pcre-8.10
+	./configure --prefix=/your_install_path/pcre
+	make && make install
+
+	安装完这些依赖的软件,继续安装apache
+	./configure --prefix=/data/zhaojingzhen/usr/local/apache2 --enable-so --enable-rewrite --with-apr=/data/zhaojingzhen/usr/local/apr --with-apr-util=/data/zhaojingzhen/usr/local/apr-util --with-pcre=/data/zhaojingzhen/usr/local/pcre
+	make
+	make install
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;  linux下安装mysql  ;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+1.背景
+	之前在mac上安装了mysql.现在尝试在linux上安装,并且是在没有su,sudo权限下进行安装的
+	出现了很多问题,值得记录一下
+
+2.首先是安装文件的选择
+	在mac上安装选用的是二进制编译好的文件,好处就是省去了变异的过程的很多问题,但坏处就是很多安装
+	选项不能自己进行设置.因为没有su,sudo权限,因此就只能在自己的目录下进行操作,安装也只能安装在自己的目录下,
+	为了能够自己设置安装的路径和其他的一些参数,我们要选择源码安装的方式.
+
+	地址: http://dev.mysql.com/downloads/mysql/
+	还是那个mysql的官网地址,在下载时候,选择source code,不要说找不到这个在哪里.
+
+3.一些路径的定义
+	为了和root用户的路径保持一致,我们对路径做如下安排:当然可以根据自己的需要来安排路径
+	安装路径为:
+	~/usr/local/mysql
+
+4.一些依赖的工具
+	安装过程中会用到cmake,在执行编译指令时候,如果cmake出现错误,版本错误等等,根据需要做些调试
+	比如版本错误,就去下载符合要求的版本
+	其他错误,根据给出的提示做修改,一半错误下边都会给出一个建议修改方式
+	# cmake 的编译安装
+	# 先下载解压
+	$ cd cmake-x.x.xx.x
+	$ ./configure --prefix=/data/zjz/bin/cmake
+	$ make && make install
+	# 在当前用户文件夹下的.bashrc 或者 .bash_profile 加入
+	# export PATH=~/bin/cmake:$PATH
+	$ . ~/.bashrc  或者 . ~/.bash_profile
+
+5.mysql 的安装
+	首先将下载的二进制文件解压
+	$ cd mysql-x.x.xx
+	$ cmake -DCMAKE_INSTALL_PREFIX=/data/zhaojingzhen/usr/local/mysql -DMYSQL_TCP_PORT=33060 -DDOWNLOAD_BOOST=1 -DWITH_BOOST=/data/zhaojingzhen/usr/local/boost
+	这里可能会出现缺少boost相关的error, 就添加下边的参数
+	-DDOWNLOAD_BOOST=1 -DWITH_BOOST=/data/zhaojingzhen/usr/local/boost
+	如果下载失败,就自己去下载,然后放到后边指定的目录就可以了
+	$ make && make install
+	
+	make && make install之后,将MySQL的bin和scripts目录加到环境变量,添加到本用户目录文件夹下的~/.bashrc 或者  ~/.bash_profile
+	$ . ~/.bashrc 或者 . ~/.bash_profile
+	
+	现在mysql下创建一个tmp目录
+	$ mkdir /data/zjz/usr/local/mysql/tmp
+	用mysql_install_db安装数据库
+	$ cd mysql/bin/
+	$ ./mysql_install_db --basedir=/data/zhaojingzhen/usr/local/mysql --datadir=/data/zhaojingzhen/usr/local/mysql/data --tmpdir=/data/zhaojingzhen/usr/local/mysql/tmp --user=zhaojingzhen
+	可能会出现错误,根据错误进行修改,百度[忘了什么错误了]
+	在mysql文件夹下创建etc/my.cnf
+	$ mkdir etc
+	$ cd etc/
+	$ touch my.cnf
+	在my.cnf里边添加如下内容
+	[client]
+	port=33060
+	socket=/data/zhaojingzhen/usr/local/mysql/my.sock
+	
+	[mysqld]
+	port=33060
+	socket=/data/zhaojingzhen/usr/local/mysql/my.sock
+	datadir=/data/zhaojingzhen/usr/local/mysql/data
+	
+	[mysql.server]
+	user=zhaojingzhen
+	basedir=/data/zhaojingzhen/usr/local/mysql
+	
+	sql_mode=NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES
+
+	[注意将其中的路径换成自己的]
+	在bin目录下创建my_mysql_start
+	$ touch my_mysql_start
+	$ chmod a+x my_mysql_start
+	内容如下
+	#!/bin/sh
+	# /data/zhaojingzhen/usr/local/mysql/bin/mysqld_safe --defaults-file=/data/zhaojingzhen/usr/local/mysql/etc/my.cnf --socket=/data/zhaojingzhen/usr/local/mysql/my.sock --pid-file=/data/zhaojingzhen/usr/local/mysql/my.pid &
+	[注意将路径换成自己的]
+	设置root密码
+	$ ./my_mysql_start
+	$ cd mysql/bin
+	$ ./mysql -P 33060 -u root -p
+	如果需要密码就是在安装mysql时候,最后给出的那个密码,挺难记的那个
+6.出现的错误
+	$ ./mysqld --initialize --user=mysql,出现如下错误
+	[Warning] TIMESTAMP with implicit DEFAULT value is deprecated. Please use --explicit_defaults_for_timestamp server option (see documentation for more details).
+	[ERROR] Aborting
+	
+	然后根据提示执行如下命令:
+	$ ./mysqld --initialize --user=mysql  --explicit_defaults_for_timestamp
+	出现如下错误
+	mysqld: Can't create directory '/var/lib/mysql/' (Errcode: 13 - Permission denied)
+	2016-09-18T11:20:29.540393Z 0 [ERROR] Aborting
+
+	然后执行如下命令:[自己指明 --basedir= 和 --datadir= 参数]
+	$ ./mysqld --initialize --user=mysql  --explicit_defaults_for_timestamp --basedir=/data/zhaojingzhen/usr/local/mysql --datadir=/data/zhaojingzhen/usr/local/mysql/data
+	
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;  linux下安装php    ;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+1.从官网下载php源文件php-5.6.26.tar.gz
+2.解压
+	tar zxvf php-5.6.26.tar.gz
+3.安装php	
+	./configure --prefix=/data/zhaojingzhen/usr/local/php --with-apxs2=/data/zhaojingzhen/usr/local/apache2/bin/apxs --with-config-file-path=/data/zhaojingzhen/usr/local/lib
+	make
+	make install
+	然后将php-5.6.26/下的php.ini-****** 复制一份到--with-config-file-path=指定的目录
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; linux下安装php扩展 ;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+===================================================================
+			安装phpredis扩展
+===================================================================
+1.下载phpredis-2.2.4.tar.gz到/data/zhaojingzhen/Downloads/目录
+	cd /data/zhaojingzhen/Downloads/ #进入软件包存放目录
+	tar zxvf phpredis-2.2.4.tar.gz #解压
+	cd phpredis-2.2.4 #进入安装目录
+	~/usr/local/php/bin/phpize #用phpize生成configure配置文件
+	./configure --with-php-config=/usr/local/php/bin/php-config  #配置
+	make  #编译
+	make install  #安装
+	安装完成之后，出现下面的安装路径
+	/usr/local/php/lib/php/extensions/no-debug-non-zts-20090626/
+2.配置php支持
+	vi /usr/local/php/etc/php.ini  #编辑配置文件，在最后一行添加以下内容
+	添加
+	extension="redis.so"
+	:wq!
+	[查看php的extensions目录,如果下边有两个文件夹,重新安装一次php]
+===================================================================
+			安装mysql,mysqli扩展
+===================================================================
+1.进入php源码目录下的ext目录[该目录就是源码解压包的扩展目录]
+2.在该目录下phpize
+	./configure --with-php-config=/data/zhaojingzhen/usr/local/php/bin/php-config --with-mysql=/data/zhaojingzhen/usr/local/mysql/
+	make && make install
+	
+	./configure --with-php-config=/data/zhaojingzhen/usr/local/php/bin/php-config --with-mysqli=/data/zhaojingzhen/usr/local/mysql/bin/mysql_config
+	make && make install
+
+	执行完这些,在php/lib/extensions/no-debug-non-zts-xxxxxxx/ 发现mysql.so 和 mysqli.so
+	然后在php.ini里边将extension=mysql.so 和 extension=mysqli.so注释取消即可
+	文件名可能是php_mysql.so 和 php_mysqli.so, 通过修改文件名或者配置文件里边的文件名, 使两者保持一致就可以
+	可能会出现缺少文件的现象,首先在源码的ext/mysqlnd下看看有没有对应的文件,如果有就直接在待安装的文件下建立ext/mysqlnd/  把文件拷贝过来即可
+	
+3.自定义mysql.sock
+	经过上述过程,mysql已经安装完成,mysql扩展已经安装完成
+	但是在使用过程中可能会出现关于mysql.sock的相关错误
+	
+	首先在my.cnf里边修改如下两个地方
+	# my.cnf
+	[client]
+	socket=/your_path/mysql.sock
+	[mysqld]
+	socket=/your_path/mysql.sock
+	
+	如果没有自己添加
+	
+	修改完成之后重启mysql服务
+	进入mysql,执行status
+	mysql> status
+	观察UNIX socket: 这个属性，应该和自己修改的一致,如果不一致说明你修改的不是mysql.cnf, 仔细检查一下有多少my.cnf的副本
+	然后就是修改php的配置文件php.ini
+	pdo_mysql.default_socket=/your_path/mysql.sock
+	mysql.default_socket = /your_path/mysql.sock
+	mysqli.default_socket = /your_path/mysql.sock
+	将上述三个修改成UNIX socket的值
+	然后重启apache,在phpinfo()中查看是否和自己修改的一致

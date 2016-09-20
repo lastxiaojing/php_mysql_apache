@@ -1,4 +1,4 @@
-# php 连接和简单使用redis的例子
+// php 连接和简单使用redis的例子
 
 <?php
 

@@ -1,10 +1,37 @@
-# 背景
-	在mac上安装mysql时候出现很多问题,很多坑.和linux有很多区别,所以做个纪录,以后有问题可以去查.
+# 将之前零碎的整理到一起,和linux的分开，以便查询
+
+;;;;;;;;;;;;;;;;;;;;;
+;; mac下配置apache ;;
+;;;;;;;;;;;;;;;;;;;;;
+其实在mac下是不用配置apache的,mac自己就自带了apache,而且性能还不错
+但是还是有些需要纪录的地方
+1.apache 配置文件
+	/etc/apache2/httpd.conf
+2.开启php
+	在httpd.conf中找到LoadModule php5_module libexec/apache2/libphp5.so
+	取消前边的注释即可
+3.修改默认路径
+	在httpd.conf里边找到DocumentRoot,这里的路径是默认的根目录,在外部访问的目录就是这个
+	有时候我们需要配置自己的路径,每次使用这个毕竟不太好
+	修改:
+	--> Document "/Users/zjz/Sites/"
+	下边对应的修改为:
+	--> <Directory "/users/zjz/Sites/">
+tips:	
+	在修改完配置文件之后,记得重新启动apache
+	在使用apache时候,需要在"偏好设置" -> "共享" -> "互联网共享" 打开(英文版系统找对应的即可)
+	还有就是防火墙需要根据需要设置一下
+
+;;;;;;;;;;;;;;;;;;;;;
+;; mac下配置mysql  ;;
+;;;;;;;;;;;;;;;;;;;;;
+1.背景
+	在mac上安装mysql时候出现很多问题,很多坑.和linux有一些区别,所以做个纪录,以后有问题可以去查.
 	参考了网上的几篇博客.
 	如有侵权,还请见谅.
 	在使用过程中,遇到问题会持续更新.
 
-# 安装
+2.安装
 	开始按照网上的教程,看起来很正规的一个教程,但是在操作过程中出现各种问题.
 	开始一直使用的是.dmg格式的安装文件(官网下载的),不知道怎么回事,在很多教程中下载完成之后都是3-4个文件,我的只有一个,
 	可能版本的问题吧,下载完成之后安装.众所周知,在Mac下,dmg格式的就好比win下的的setup.exe一样,点击就可以安装.
@@ -24,7 +51,7 @@
 	# 注意: mysql 5.7.6以上版本没有scripts目录,改成了
 	sudo bin/mysqld --initialize --user=mysql
 	
-# 安装完成 一些初始化问题
+3.安装完成 一些初始化问题
 	cd /usr/local/mysql
 	# 启动
 	sudo support-files/mysql.server start
@@ -42,7 +69,7 @@
 	./mysql -u root -p
 	<your-password>
 
-# 在这些过程中可能会出现一些问题,我用的系统是mac OS X Yosemite 10.10.2
+4.在这些过程中可能会出现一些问题,我用的系统是mac OS X Yosemite 10.10.2
 	1.如果启动时候出现问题
 	首先执行:
 	ps -ef | grep mysql
@@ -60,6 +87,7 @@
 	>select * from user;
 	查看一下字段是password还是authentication_string,然后在执行下边的命令
 	>update user set password=PASSWORD("newpass") where user="root";
+	>update user set authentication_string=PASSWORD("newpass") where user="root";
 	# 更新权限
 	>flush privileges;
 	>quit;
@@ -69,3 +97,12 @@
 	如果没有在指定的位置,建立一个软链就好了
 	判断一下mysql/bin目录下有没有一个mysql-bin的文件,如果有可以先屏蔽此文件
 	判断一下是不是权限问题
+	4.在连接数据库时,调用mysql_connect()函数,出现错误:
+	PHP Warning:  mysql_connect(): No such file or directory in /Users/zjz/Documents/folder_php/connect_mysql.php on line 3
+	
+	解决办法:
+	写个脚本输出phpinfo页面,找到mysql.default_socket, mysqli.default_socket, pdo_mysql.default_socket记下对应的值
+	启动mysql,在mysql下执行status
+	>status
+	记下UNIX socket的值
+	将结果进行比较,如果结果不同就在php.ini里边将前边对应的值改成status中UNIX socket的值,或者建立软链解决

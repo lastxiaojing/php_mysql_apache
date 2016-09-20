@@ -1,4 +1,2 @@
-# php_mysql_apache
+# 主要是记录在mac和linux下学习安装使用php+apache+mysql+nginx+redis的过程
 
-主要是记录自己学习php_mysql_apache框架的一个过程
-比较简单,目的是自己查看和分享
