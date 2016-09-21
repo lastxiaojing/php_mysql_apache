@@ -211,3 +211,43 @@
 	mysqli.default_socket = /your_path/mysql.sock
 	将上述三个修改成UNIX socket的值
 	然后重启apache,在phpinfo()中查看是否和自己修改的一致
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 	php + nginx        ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+1.说明
+	php5.5 以后就不需要单独安装php-fpm了,php内置了php-fpm或者php-cgi
+	我用的是php-5.6.3, 在php/bin里边只有php-cgi, 
+	如果要使用php+nginx,请先启用php-cgi,
+	php-cgi -b 127.0.0.1:9000	
+
+	在php.ini中将cgi.fix_pathinfo=1; 注释取消掉
+
+	在nginx.conf的配置中针对php文件配置其利用FastCGI进程来执行:
+	在httpd段的
+	location ~ .*.php$ {
+		
+	}
+	取消注释,根据需要做些修改
+
+	直接使用php-cgi容易有一下两个问题:
+	1.如果进程崩溃,难以配置重新启动
+	2.但进程效率低
+	因此采用Lighttpd的spawn-fcgi来控制进程的运行,
+	wget http://www.lighttpd.net/download/lighttpd-1.4.8.tar.bz2
+	tar -xvjf lightpd-1.4.18.tar.bz2
+	cd lighttpd-1.4.18
+	./configure --prefix=/Your_install_path/
+	make
+	make install
+	接下来使用spawn-fcgi来控制php-cgi的FastCGI进程
+	your_spawn-fcgi -a 127.0.0.1 -p 9000 -C 5 -u www-data -g www-data -f /your_php_cgi_path
+	参数含义:
+	-f <fcgiapp>	指定调用FastCGI的进程的执行程序位置,根据系统上所装的PHP的情况具体设置
+	-a <addr>	绑定到地址addr
+	-p <port>	绑定到端口port
+	-s <path>	绑定到unix socket的路径path
+	-C <childs>	指定产生的FastCGI的进程数,默认为5(仅用于PHP)
+	-P <path>	指定产生的进程PID的文件路径
+	-u 和 -g	FastCGI使用什么身份(-u 用户 -g用户组)运行,Ubuntu下可以使用www-data,其他根据情况配置,如nobody, apache等等
+	然后我们就可以将这行代码加入到/etc/rc.local文件底部,这样系统启动的时候也可以同样启动PHP的FastCGI进程.
